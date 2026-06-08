@@ -14,3 +14,7 @@ __pycache__/
 # فایل سرویس‌اکانت گوگل
 *.json
 !.env.example
+
+# فایل‌های سیستم
+.DS_Store
+Thumbs.db
