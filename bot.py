@@ -1,6 +1,6 @@
 """
-SEO Job Scraper Bot v4.1
-========================
+Graphic Designer Job Scraper Bot v4.1
+======================================
 منابع شغلی رایگان:
   • Remotive.com
   • Jobicy.com
@@ -60,7 +60,6 @@ except ImportError:
 #  LOGGING
 # ══════════════════════════════════════════════════════════════════════════════
 
-# مسیر فایل‌ها نسبت به محل اسکریپت (برای جلوگیری از باگ در CI)
 SCRIPT_DIR = Path(__file__).parent
 
 logging.basicConfig(
@@ -95,47 +94,49 @@ GSHEET_SHEET_NAME  = "Jobs"
 CF_WORKER_URL    = os.environ.get("CF_WORKER_URL", "")
 
 # ── AI Config (اختیاری) ─────────────────────────────────────────────────────
-AI_PROVIDER = os.environ.get("AI_PROVIDER", "").lower()       # gemini | openai | tokenlb | custom
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "").lower()
 AI_API_KEY  = os.environ.get("AI_API_KEY", "")
 AI_MODEL    = os.environ.get("AI_MODEL", "gemini-2.0-flash")
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "")
 
-# TokenLB: اگه provider برابر tokenlb بود، base_url خودکار ست میشه
 if AI_PROVIDER == "tokenlb":
     AI_BASE_URL = "https://tokenlb.net/v1"
 
-# ── Telegraph (اختیاری — cache token برای جلوگیری از بن شدن) ─────────────────
 TELEGRAPH_TOKEN = os.environ.get("TELEGRAPH_TOKEN", "")
 
-# ── Adzuna (اختیاری) ────────────────────────────────────────────────────────
 ADZUNA_APP_ID  = os.environ.get("ADZUNA_APP_ID", "")
 ADZUNA_API_KEY = os.environ.get("ADZUNA_API_KEY", "")
 
-# ── مسیر فایل seen_jobs نسبت به اسکریپت ─────────────────────────────────────
 SEEN_JOBS_FILE   = SCRIPT_DIR / "seen_jobs.txt"
 MAX_SEEN_JOBS    = 3000
 MAX_JOBS_PER_RUN = 20
 MIN_FIT_SCORE    = 35
-MAX_JOB_AGE_DAYS = 7       # ۷ روز — چون لینکدین دیرتر ایندکس می‌کنه
+MAX_JOB_AGE_DAYS = 7
 
-# ── JSearch Queries ──────────────────────────────────────────────────────────
+# ── JSearch Queries — مخصوص گرافیک دیزاینر ──────────────────────────────────
 JSEARCH_QUERIES = {
-    1: ["Junior SEO remote", "Technical SEO remote", "SEO Python remote"],
-    2: ["SEO Content Editor remote", "WordPress SEO Specialist remote"],
-    3: ["on-page SEO specialist remote", "SEO copywriter remote"],
+    "graphic designer remote",
+    "UI UX designer remote",
+    "visual designer remote",
+    "brand designer remote",
+    "motion designer remote",
+    "digital designer remote",
+    "product designer remote",
+    "creative designer remote",
 }
 
-# ── مهارت‌ها (از env یا پیش‌فرض) ─────────────────────────────────────────────
+# ── مهارت‌های گرافیک دیزاینر ────────────────────────────────────────────────
 _DEFAULT_SKILLS = [
-    "python", "wordpress", "technical seo", "on-page seo",
-    "screaming frog", "ahrefs", "semrush", "google analytics",
-    "google search console", "content", "keyword research",
-    "html", "cms", "link building", "schema",
+    "photoshop", "illustrator", "figma", "indesign", "after effects",
+    "sketch", "adobe xd", "canva", "procreate", "lightroom",
+    "ui design", "ux design", "branding", "typography", "motion graphics",
+    "logo design", "vector", "print design", "web design", "wireframing",
+    "prototyping", "design systems", "adobe creative suite", "animation",
+    "social media design", "packaging design", "visual identity",
 ]
 _user_skills_env = os.environ.get("USER_SKILLS", "")
 MY_SKILLS = [s.strip().lower() for s in _user_skills_env.split(",") if s.strip()] if _user_skills_env else _DEFAULT_SKILLS
 
-# ── رزومه/پروفایل کاربر (اختیاری — AI ازش استفاده می‌کنه) ────────────────────
 USER_RESUME = os.environ.get("USER_RESUME", "")
 
 # ── کلمات ممنوعه ─────────────────────────────────────────────────────────────
@@ -143,22 +144,25 @@ BLACKLIST_KEYWORDS = [
     "us residents only", "must reside in us", "must be located in us",
     "must be based in the us", "must be based in us",
     "must be authorized to work in the us",
-    "senior seo", "head of seo", "director of seo", "vp of",
-    "agency", "full stack", "fullstack",
-    "native english speaker only",
+    "senior", "head", "director", "vp of",
     "10+ years", "8+ years", "7+ years",
+    "3d modeling", "game design", "3ds max", "maya", "blender",  # تخصص‌های خارج از محدوده
 ]
 
-# ── کلمات تقویت‌کننده ────────────────────────────────────────────────────────
+# ── کلمات تقویت‌کننده — مخصوص گرافیک دیزاینر ─────────────────────────────
 BOOST_KEYWORDS = {
-    "technical seo": 20, "python": 18, "wordpress": 15,
-    "junior": 18, "entry level": 15, "associate": 12,
-    "seo specialist": 12, "seo editor": 12, "content editor": 10,
-    "on-page": 10, "part-time": 8, "contract": 5,
+    "graphic designer": 20, "graphic design": 18,
+    "visual designer": 18, "brand designer": 16,
+    "ui designer": 16, "ux designer": 16, "ui/ux": 15,
+    "figma": 15, "adobe": 12, "photoshop": 12, "illustrator": 12,
+    "junior": 18, "entry level": 15, "associate": 12, "jr": 14,
+    "motion designer": 14, "digital designer": 13,
     "remote-first": 8, "async": 5, "flexible": 4,
+    "part-time": 8, "contract": 5, "freelance": 6,
+    "creative": 6, "branding": 10, "identity": 8,
 }
 
-# ── Regex patterns برای Fit Score (word boundary) ────────────────────────────
+# ── Regex patterns ────────────────────────────────────────────────────────────
 _SKILL_PATTERNS = {skill: re.compile(r"\b" + re.escape(skill) + r"\b", re.IGNORECASE)
                    for skill in MY_SKILLS}
 _BOOST_PATTERNS = {kw: re.compile(r"\b" + re.escape(kw) + r"\b", re.IGNORECASE)
@@ -167,48 +171,41 @@ _BLACKLIST_PATTERNS = {kw: re.compile(r"\b" + re.escape(kw.lower()) + r"\b", re.
                        for kw in BLACKLIST_KEYWORDS}
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  AI COVER LETTER (اختیاری — Gemini / OpenAI / Custom)
+#  AI COVER LETTER
 # ══════════════════════════════════════════════════════════════════════════════
 
 def ai_available() -> bool:
-    """بررسی اینکه AI فعال شده یا نه"""
     return bool(AI_PROVIDER and AI_API_KEY)
 
 
 def generate_cover_letter(job: dict, matched_skills: list) -> str:
-    """
-    تولید Cover Letter با AI — فقط بر اساس matched_skills.
-    اگه AI تنظیم نشده باشه، خالی برمی‌گردونه.
-    هیچوقت باعث crash نمی‌شه.
-    """
     if not ai_available():
         return ""
 
     title   = job.get("title", "")
     company = job.get("company", "")
     desc    = (job.get("description") or "")[:1500]
-    
-    # فقط مهارت‌های تطابق‌یافته رو بده — نه همه MY_SKILLS
     skills_str = ', '.join(matched_skills) if matched_skills else ', '.join(MY_SKILLS[:5])
 
-    # اگه کاربر رزومه داده، اضافه کن
     resume_section = ""
     if USER_RESUME:
         resume_section = f"\nApplicant's background: {USER_RESUME[:500]}\n"
 
     prompt = (
-        f"Write a professional, concise cover letter for this job:\n\n"
+        f"Write a professional, concise cover letter for this graphic design job:\n\n"
         f"Title: {title}\n"
         f"Company: {company}\n"
         f"Description: {desc}\n\n"
-        f"The applicant has these RELEVANT skills: {skills_str}\n"
+        f"The applicant has these RELEVANT design skills: {skills_str}\n"
         f"{resume_section}\n"
         f"Rules:\n"
         f"- Keep it under 250 words\n"
         f"- Be laser-targeted to the job requirements\n"
+        f"- Highlight design tools and creative skills that match the job\n"
         f"- ONLY mention skills from the provided list that match the job\n"
         f"- If background info is provided, weave it naturally into the letter\n"
-        f"- Show enthusiasm but stay professional\n"
+        f"- Show creativity and enthusiasm but stay professional\n"
+        f"- Mention portfolio if relevant\n"
         f"- End with a call to action\n"
         f"- Do NOT use any Markdown formatting like **bold** or *italics*. Use only plain text."
     )
@@ -223,7 +220,6 @@ def generate_cover_letter(job: dict, matched_skills: list) -> str:
             return ""
     except Exception as e:
         log.error(f"AI cover letter error: {e}")
-        # اطلاع‌رسانی به کاربر — فقط یکبار در هر اجرا (جلوگیری از spam)
         if not _ai_error_notified["sent"]:
             _ai_error_notified["sent"] = True
             try:
@@ -235,25 +231,19 @@ def generate_cover_letter(job: dict, matched_skills: list) -> str:
                 )
                 send_telegram(err_msg)
             except Exception:
-                pass  # حتی اگه ارسال پیام خطا هم فیل شد، ربات crash نکنه
+                pass
         return ""
 
 
 def _call_gemini(prompt: str) -> str:
-    """Google Gemini API"""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL}:generateContent?key={AI_API_KEY}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 1024,
-        }
+        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1024}
     }
     resp = requests.post(url, json=payload, timeout=30)
     resp.raise_for_status()
     data = resp.json()
-
-    # استخراج متن از پاسخ Gemini
     candidates = data.get("candidates", [])
     if not candidates:
         return ""
@@ -264,17 +254,13 @@ def _call_gemini(prompt: str) -> str:
 
 
 def _call_openai_compatible(prompt: str) -> str:
-    """OpenAI یا هر API سازگار (مثل Together, Groq, etc.)"""
     base_url = AI_BASE_URL or "https://api.openai.com/v1"
     url = f"{base_url}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {AI_API_KEY}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}
     payload = {
         "model": AI_MODEL,
         "messages": [
-            {"role": "system", "content": "You write professional cover letters for job applications."},
+            {"role": "system", "content": "You write professional cover letters for graphic design job applications."},
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.7,
@@ -289,15 +275,10 @@ def _call_openai_compatible(prompt: str) -> str:
     return choices[0].get("message", {}).get("content", "").strip()
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  SEEN JOBS CACHE — OrderedDict برای حفظ ترتیب ورود
+#  SEEN JOBS CACHE
 # ══════════════════════════════════════════════════════════════════════════════
 
 def load_seen_jobs() -> OrderedDict:
-    """
-    بارگذاری دیتابیس آگهی‌های دیده‌شده.
-    از OrderedDict استفاده می‌کنیم تا ترتیب ورود حفظ بشه
-    و هنگام prune شدن، آگهی‌های قدیمی (نه جدید) حذف بشن.
-    """
     seen = OrderedDict()
     if SEEN_JOBS_FILE.exists():
         for line in SEEN_JOBS_FILE.read_text(encoding="utf-8").splitlines():
@@ -311,19 +292,14 @@ def load_seen_jobs() -> OrderedDict:
 
 
 def save_seen_jobs(seen: OrderedDict) -> None:
-    """
-    ذخیره دیتابیس. اگه تعداد از MAX_SEEN_JOBS بیشتر بود،
-    قدیمی‌ترین‌ها (اول لیست) حذف میشن — نه جدیدها.
-    """
     ids = list(seen.keys())
     if len(ids) > MAX_SEEN_JOBS:
-        # حذف قدیمی‌ترین‌ها (از ابتدا)
         ids = ids[-MAX_SEEN_JOBS:]
     SEEN_JOBS_FILE.write_text("\n".join(ids), encoding="utf-8")
     log.info(f"Saved {len(ids)} IDs to cache")
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  FIT SCORE — با Regex word boundary (جلوگیری از false positive)
+#  FIT SCORE
 # ══════════════════════════════════════════════════════════════════════════════
 
 def calculate_fit_score(job: dict) -> tuple:
@@ -335,19 +311,21 @@ def calculate_fit_score(job: dict) -> tuple:
     desc     = (job.get("description") or "").lower()
     combined = f"{title} {desc}"
 
-    # Boost keywords — با word boundary
     for kw, pts in BOOST_KEYWORDS.items():
         if _BOOST_PATTERNS[kw].search(combined):
             score += pts
 
-    # Skills — با word boundary (جلوگیری از seo in baseon)
     for skill in MY_SKILLS:
         if _SKILL_PATTERNS[skill].search(combined):
             matched_skills.append(skill)
             score += 7
 
-    if re.search(r"\bseo\b", title):
-        score += 12
+    # بونوس برای عنوان شغلی مرتبط
+    if re.search(r"\b(graphic|visual|brand|ui|ux|motion|digital|creative)\s+designer\b", title):
+        score += 15
+    if re.search(r"\bdesigner\b", title):
+        score += 8
+
     if job.get("salary"):
         score += 10
     if job.get("remote"):
@@ -355,18 +333,19 @@ def calculate_fit_score(job: dict) -> tuple:
     if any(re.search(r"\b" + w + r"\b", title) for w in ["junior", "associate", "entry", "jr"]):
         score += 10
 
-    return min(score, 100), matched_skills[:4]
+    return min(score, 100), matched_skills[:5]  # تا ۵ مهارت برای دیزاینر
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  FREE SOURCES
+#  FREE SOURCES — با کوئری‌های مخصوص گرافیک دیزاینر
 # ══════════════════════════════════════════════════════════════════════════════
 
 def fetch_remotive() -> list:
-    """Remotive.com — رایگان، بدون API key"""
+    """Remotive.com — کتگوری design"""
     endpoints = [
-        "https://remotive.com/api/remote-jobs?category=seo&limit=20",
-        "https://remotive.com/api/remote-jobs?search=technical+seo&limit=10",
-        "https://remotive.com/api/remote-jobs?search=seo+content&limit=10",
+        "https://remotive.com/api/remote-jobs?category=design&limit=30",
+        "https://remotive.com/api/remote-jobs?search=graphic+designer&limit=15",
+        "https://remotive.com/api/remote-jobs?search=ui+ux+designer&limit=15",
+        "https://remotive.com/api/remote-jobs?search=brand+designer&limit=10",
     ]
     results = []
     for url in endpoints:
@@ -395,11 +374,13 @@ def fetch_remotive() -> list:
 
 
 def fetch_jobicy() -> list:
-    """Jobicy.com — رایگان، بدون API key"""
+    """Jobicy.com — تگ‌های مرتبط با دیزاین"""
     endpoints = [
-        "https://jobicy.com/api/v2/remote-jobs?tag=seo&count=20",
-        "https://jobicy.com/api/v2/remote-jobs?tag=content-marketing&count=15",
-        "https://jobicy.com/api/v2/remote-jobs?tag=wordpress&count=10",
+        "https://jobicy.com/api/v2/remote-jobs?tag=graphic-design&count=20",
+        "https://jobicy.com/api/v2/remote-jobs?tag=ui-design&count=15",
+        "https://jobicy.com/api/v2/remote-jobs?tag=ux-design&count=15",
+        "https://jobicy.com/api/v2/remote-jobs?tag=visual-design&count=10",
+        "https://jobicy.com/api/v2/remote-jobs?tag=motion-design&count=10",
     ]
     results = []
     for url in endpoints:
@@ -436,9 +417,13 @@ def fetch_jobicy() -> list:
 
 
 def fetch_arbeitnow() -> list:
-    """Arbeitnow — رایگان، بدون API key"""
-    SEO_TERMS = ["seo", "search engine optimization", "content editor",
-                 "technical seo", "wordpress seo"]
+    """Arbeitnow — فیلتر برای شغل‌های دیزاین"""
+    DESIGN_TERMS = [
+        "graphic designer", "graphic design", "visual designer",
+        "ui designer", "ux designer", "ui/ux", "brand designer",
+        "motion designer", "digital designer", "creative designer",
+        "logo design", "illustrator", "figma",
+    ]
     try:
         resp = requests.get(
             "https://arbeitnow.com/api/job-board-api",
@@ -452,7 +437,7 @@ def fetch_arbeitnow() -> list:
                 continue
             title = (j.get("title") or "").lower()
             desc = (j.get("description") or "").lower()[:300]
-            if not any(t in title or t in desc for t in SEO_TERMS):
+            if not any(t in title or t in desc for t in DESIGN_TERMS):
                 continue
             results.append({
                 "id":           f"arbeitnow_{j.get('slug', '')}",
@@ -475,17 +460,17 @@ def fetch_arbeitnow() -> list:
 
 
 def fetch_adzuna() -> list:
-    """Adzuna — رایگان با API key (اختیاری)"""
+    """Adzuna — جستجو برای شغل‌های دیزاین"""
     if not ADZUNA_APP_ID or not ADZUNA_API_KEY:
         return []
 
-    queries = ["seo", "technical seo", "seo specialist"]
+    queries = ["graphic designer", "ui ux designer", "visual designer", "brand designer"]
     results = []
 
     for q in queries:
         try:
             resp = requests.get(
-                f"https://api.adzuna.com/v1/api/jobs/us/search/1",
+                "https://api.adzuna.com/v1/api/jobs/us/search/1",
                 params={
                     "app_id": ADZUNA_APP_ID,
                     "app_key": ADZUNA_API_KEY,
@@ -521,29 +506,28 @@ def fetch_adzuna() -> list:
 
 
 def fetch_findwork() -> list:
-    """
-    FindWork.dev — رایگان (۱۰۰ req/روز)، بدون API key.
-    مخصوص شغل‌های تکنولوژی و remote.
-    """
-    SEO_TERMS = ["seo", "search engine", "content editor", "wordpress",
-                 "technical seo", "organic", "keyword"]
+    """FindWork.dev — جستجو برای شغل‌های دیزاین"""
+    DESIGN_TERMS = [
+        "graphic designer", "graphic design", "ui designer", "ux designer",
+        "visual designer", "brand designer", "motion designer", "figma",
+        "illustrator", "photoshop", "creative designer",
+    ]
     try:
         resp = requests.get(
             "https://findwork.dev/api/jobs/",
-            params={"search": "seo", "remote": "true", "order_by": "-date_posted"},
-            headers={"User-Agent": "Mozilla/5.0 (compatible; SEOJobBot/4.1)"},
+            params={"search": "graphic designer", "remote": "true", "order_by": "-date_posted"},
+            headers={"User-Agent": "Mozilla/5.0 (compatible; GraphicDesignJobBot/4.1)"},
             timeout=15,
         )
         if resp.status_code == 403:
-            log.warning("FindWork.dev: access denied (may need API key in future)")
+            log.warning("FindWork.dev: access denied")
             return []
         resp.raise_for_status()
         results = []
         for j in resp.json().get("results", []):
             title = (j.get("role") or "").lower()
             desc = (j.get("text") or "").lower()[:500]
-            # فیلتر بر اساس SEO terms
-            if not any(t in title or t in desc for t in SEO_TERMS):
+            if not any(t in title or t in desc for t in DESIGN_TERMS):
                 continue
             results.append({
                 "id":           f"findwork_{j.get('id', '')}",
@@ -566,7 +550,6 @@ def fetch_findwork() -> list:
 
 
 def _normalize_cf_worker_url(url: str) -> str:
-    """اطمینان از اینکه URL ورکر به /jobs ختم بشه"""
     url = url.rstrip("/")
     if not url.endswith("/jobs"):
         url += "/jobs"
@@ -579,8 +562,7 @@ def fetch_cloudflare_worker() -> list:
         return []
 
     worker_url = _normalize_cf_worker_url(CF_WORKER_URL)
-
-    headers = {"User-Agent": "SEOJobBot/4.1"}
+    headers = {"User-Agent": "GraphicDesignJobBot/4.1"}
 
     try:
         resp = requests.get(worker_url, headers=headers, timeout=20)
@@ -616,11 +598,10 @@ def fetch_cloudflare_worker() -> list:
         return []
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  JSEARCH API (اختیاری) — با محدودیت P3 روزهای زوج
+#  JSEARCH API (اختیاری)
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _should_run_p3() -> bool:
-    """P3 queries فقط روزهای زوج اجرا میشن (صرفه‌جویی در سقف رایگان)"""
     return datetime.now(timezone.utc).day % 2 == 0
 
 
@@ -636,7 +617,7 @@ def search_jsearch(query: str) -> list:
     params = {
         "query": query,
         "num_pages": "1",
-        "date_posted": "week",       # ۷ روز — لینکدین دیرتر ایندکس می‌کنه
+        "date_posted": "week",
         "work_from_home": "true",
     }
 
@@ -678,7 +659,6 @@ def _normalize_jsearch(j: dict) -> dict:
 
     city = j.get("job_city") or ""
     country = j.get("job_country") or ""
-    # ساخت location — filter برای حذف بخش‌های خالی
     loc_parts = [p for p in (city, country) if p]
     loc = ", ".join(loc_parts) or "Remote"
 
@@ -721,7 +701,7 @@ def is_too_old(job: dict) -> bool:
         return False
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  TELEGRAM — با link_preview_options جدید
+#  TELEGRAM
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _score_bar(score: int) -> str:
@@ -740,7 +720,7 @@ def format_job(job: dict, score: int, skills: list) -> str:
     loc     = html.escape(job.get("location") or "Remote")
 
     lines = [
-        f"💼 <b>{title}</b>",
+        f"🎨 <b>{title}</b>",
         f"🏢 {company}",
         f"📍 {loc}",
     ]
@@ -748,7 +728,7 @@ def format_job(job: dict, score: int, skills: list) -> str:
         lines.append(f"💰 <b>{html.escape(str(salary))}</b>")
     lines.append(f"📊 {_score_bar(score)} {score}/100")
     if skills:
-        lines.append(f"✅ {', '.join(html.escape(s) for s in skills)}")
+        lines.append(f"🖌️ {', '.join(html.escape(s) for s in skills)}")
     lines.append(f"{semoji} {source}")
     if posted:
         lines.append(f"📅 {posted}")
@@ -759,10 +739,6 @@ def format_job(job: dict, score: int, skills: list) -> str:
 
 
 def send_telegram(text: str, reply_markup: dict = None, _retries: int = 3) -> bool:
-    """
-    ارسال پیام به تلگرام — با link_preview_options جدید.
-    اگه Flood Wait بخوره، منتظر میمونه و retry می‌کنه.
-    """
     api_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -779,7 +755,6 @@ def send_telegram(text: str, reply_markup: dict = None, _retries: int = 3) -> bo
             if resp.ok:
                 return True
 
-            # Flood Wait handling — تلگرام retry_after رو برمی‌گردونه
             if resp.status_code == 429:
                 try:
                     retry_after = resp.json().get("parameters", {}).get("retry_after", 30)
@@ -801,26 +776,17 @@ def send_telegram(text: str, reply_markup: dict = None, _retries: int = 3) -> bo
     return False
 
 
-# Telegraph token cache — یکبار ساخته میشه و بقیه استفاده می‌کنن
 _telegraph_token_cache = {"token": TELEGRAPH_TOKEN}
-
-# AI error notification flag — فقط یکبار در هر اجرا پیام خطا ارسال میشه
 _ai_error_notified = {"sent": False}
 
 
 def _get_telegraph_token() -> str:
-    """
-    گرفتن Telegraph access_token:
-    1. اول از TELEGRAPH_TOKEN (env) استفاده می‌کنه
-    2. اگه نبود، فقط یکبار اکانت می‌سازه و cache می‌کنه
-    """
     if _telegraph_token_cache["token"]:
         return _telegraph_token_cache["token"]
-
     try:
         acc_resp = requests.post(
             "https://api.telegra.ph/createAccount",
-            json={"short_name": "SEOJobBot", "author_name": "SEO Job Bot"},
+            json={"short_name": "DesignJobBot", "author_name": "Graphic Design Job Bot"},
             timeout=10,
         )
         acc_data = acc_resp.json()
@@ -835,17 +801,10 @@ def _get_telegraph_token() -> str:
 
 
 def publish_to_telegraph(title: str, content: str) -> str:
-    """
-    پابلیش متن روی Telegra.ph.
-    از token ذخیره‌شده (TELEGRAPH_TOKEN) استفاده می‌کنه — نه ساخت اکانت جدید هر بار.
-    اگه ناموفق بود، خالی برمی‌گردونه.
-    """
     access_token = _get_telegraph_token()
     if not access_token:
         return ""
-
     try:
-        # ساخت محتوای HTML ساده برای Telegraph
         paragraphs = content.split("\n\n")
         nodes = []
         for para in paragraphs:
@@ -854,14 +813,13 @@ def publish_to_telegraph(title: str, content: str) -> str:
                 if line.strip():
                     nodes.append({"tag": "p", "children": [line.strip()]})
 
-        # پابلیش صفحه
         page_resp = requests.post(
             "https://api.telegra.ph/createPage",
             json={
                 "access_token": access_token,
                 "title": title[:256],
                 "content": nodes or [{"tag": "p", "children": ["No content"]}],
-                "author_name": "SEO Job Bot",
+                "author_name": "Graphic Design Job Bot",
             },
             timeout=10,
         )
@@ -875,23 +833,16 @@ def publish_to_telegraph(title: str, content: str) -> str:
 
 
 def build_job_buttons(job: dict, cover_letter_url: str = "") -> dict:
-    """
-    ساخت دکمه‌های زیر هر آگهی.
-    - Apply همیشه نشون داده میشه
-    - Cover Letter فقط وقتی لینک Telegraph داشته باشیم
-    """
     url = job.get("url", "")
     if not url:
         return {}
     rows = [[{"text": "📝 Apply", "url": url}]]
-
     if cover_letter_url:
         rows.append([{"text": "✍️ Cover Letter", "url": cover_letter_url}])
-
     return {"inline_keyboard": rows}
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  GOOGLE SHEETS (اختیاری) — Batch Append
+#  GOOGLE SHEETS (اختیاری)
 # ══════════════════════════════════════════════════════════════════════════════
 
 def get_sheets_client():
@@ -929,18 +880,11 @@ def ensure_sheet_headers(client) -> None:
 
 
 def batch_append_to_sheet(client, rows: list) -> None:
-    """
-    ارسال دسته‌ای (Batch) ردیف‌ها به Google Sheets.
-    به جای یک ریکوئست به‌ازای هر آگهی، همه رو یکجا ارسال می‌کنه.
-    """
     if not client or not rows:
         return
     try:
         sheet = client.open_by_key(GSHEET_ID).worksheet(GSHEET_SHEET_NAME)
-        sheet.append_rows(
-            rows,
-            value_input_option="USER_ENTERED",
-        )
+        sheet.append_rows(rows, value_input_option="USER_ENTERED")
         log.info(f"Batch appended {len(rows)} rows to Google Sheets")
     except Exception as e:
         log.error(f"Sheet batch append error: {e}")
@@ -951,7 +895,7 @@ def batch_append_to_sheet(client, rows: list) -> None:
 
 def main() -> None:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    log.info(f"=== SEO Job Scraper v4.1 started at {now} ===")
+    log.info(f"=== Graphic Design Job Scraper v4.1 started at {now} ===")
 
     seen_jobs = load_seen_jobs()
     sheets = get_sheets_client()
@@ -960,7 +904,6 @@ def main() -> None:
     raw_jobs = []
     source_counts = {}
 
-    # ── منابع رایگان ─────────────────────────────────────────────────────────
     free_sources = [
         (fetch_remotive, "Remotive"),
         (fetch_jobicy, "Jobicy"),
@@ -979,21 +922,15 @@ def main() -> None:
             log.error(f"{name} failed: {e}\n{traceback.format_exc()}")
             source_counts[name] = 0
 
-    # ── JSearch (اختیاری) — P3 فقط روزهای زوج ────────────────────────────────
     jsearch_total = 0
-    for priority in sorted(JSEARCH_QUERIES.keys()):
-        # P3 فقط روزهای زوج اجرا میشه (صرفه‌جویی در سقف رایگان ۲۰۰ req/ماه)
-        if priority == 3 and not _should_run_p3():
-            log.info("Skipping P3 JSearch queries (odd day)")
-            continue
-        for query in JSEARCH_QUERIES[priority]:
-            try:
-                jobs = search_jsearch(query)
-                jsearch_total += len(jobs)
-                raw_jobs.extend(jobs)
-            except Exception as e:
-                log.error(f"JSearch '{query}': {e}")
-            time.sleep(1.5)
+    for query in JSEARCH_QUERIES:
+        try:
+            jobs = search_jsearch(query)
+            jsearch_total += len(jobs)
+            raw_jobs.extend(jobs)
+        except Exception as e:
+            log.error(f"JSearch '{query}': {e}")
+        time.sleep(1.5)
     source_counts["JSearch"] = jsearch_total
 
     # ── فیلتر + امتیازدهی ────────────────────────────────────────────────────
@@ -1047,13 +984,12 @@ def main() -> None:
         f"Seen: {stats['seen']} | Old: {stats['old']} | Low: {stats['low_score']}"
     )
 
-    # ── ارسال به تلگرام ──────────────────────────────────────────────────────
     active_sources = {k: v for k, v in source_counts.items() if v > 0}
     sources_line = " | ".join(f"{k}: {v}" for k, v in active_sources.items())
 
     if not qualified:
         send_telegram(
-            f"🔍 <b>Daily Report</b>\n📅 {now}\n\n"
+            f"🎨 <b>Daily Design Jobs Report</b>\n📅 {now}\n\n"
             f"No qualified jobs found.\n\n"
             f"📌 {sources_line or 'No sources'}\n"
             f"⛔ {stats['blacklisted']} filtered | "
@@ -1064,10 +1000,9 @@ def main() -> None:
         save_seen_jobs(seen_jobs)
         return
 
-    # Header message
     ai_status = "🧠 AI: ON" if ai_available() else "🧠 AI: OFF"
     send_telegram(
-        f"🤖 <b>New SEO Jobs</b>\n"
+        f"🎨 <b>New Graphic Design Jobs</b>\n"
         f"📅 {now}\n\n"
         f"✅ <b>{len(qualified)}</b> jobs (sorted by fit)\n"
         f"⛔ {stats['blacklisted']} filtered | "
@@ -1081,18 +1016,16 @@ def main() -> None:
 
     sent = 0
     cl_count = 0
-    MAX_COVER_LETTERS = 5  # محدود کردن CL به top 5 برای صرفه‌جویی در API
-    sheet_rows = []  # جمع‌آوری ردیف‌ها برای Batch ارسال به Sheets
+    MAX_COVER_LETTERS = 5
+    sheet_rows = []
 
     for job, score, skills in qualified[:MAX_JOBS_PER_RUN]:
         try:
-            # تولید Cover Letter با AI (اگه فعال باشه) + پابلیش روی Telegraph
             cl_url = ""
-            cl_text = ""
             if ai_available() and TELEGRAPH_TOKEN and cl_count < MAX_COVER_LETTERS:
                 cl_text = generate_cover_letter(job, skills)
                 if cl_text:
-                    time.sleep(1)  # delay قبل از Telegraph برای جلوگیری از بن
+                    time.sleep(1)
                     cl_title = f"Cover Letter — {job.get('title', '')[:60]}"
                     cl_url = publish_to_telegraph(cl_title, cl_text)
                     if cl_url:
@@ -1100,31 +1033,24 @@ def main() -> None:
                     else:
                         log.warning(f"Telegraph publish failed for: {job.get('title', '')[:40]}")
 
-            # ساخت inline buttons (با یا بدون لینک Cover Letter)
             buttons = build_job_buttons(job, cover_letter_url=cl_url)
-
-            # ارسال آگهی
             msg = format_job(job, score, skills)
             if send_telegram(msg, reply_markup=buttons if buttons else None):
                 sent += 1
-
-                # جمع‌آوری ردیف برای Batch append به Sheets
                 sheet_rows.append([
                     job.get("title", ""), job.get("company", ""),
                     job.get("source", ""), job.get("url", ""),
                     job.get("posted_at", ""), job.get("salary", ""),
                     score, job.get("location", ""),
                     datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-                    "New", cl_url,  # لینک Cover Letter (Telegraph)
+                    "New", cl_url,
                 ])
 
-            time.sleep(1.5)  # جلوگیری از Flood Wait تلگرام
+            time.sleep(1.5)
         except Exception as e:
             log.error(f"Send error: {e}")
 
-    # ── Batch ارسال به Google Sheets (خارج از حلقه) ───────────────────────────
     batch_append_to_sheet(sheets, sheet_rows)
-
     save_seen_jobs(seen_jobs)
     log.info(f"=== Done. Sent {sent}/{len(qualified)} ===")
 
