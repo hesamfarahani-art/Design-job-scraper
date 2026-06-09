@@ -3,6 +3,7 @@ Graphic Designer Job Scraper Bot v4.1
 ======================================
 منابع شغلی رایگان:
   • Remotive.com
+  • linkdin.com
   • Jobicy.com
   • Arbeitnow
   • Adzuna (رایگان با API key)
